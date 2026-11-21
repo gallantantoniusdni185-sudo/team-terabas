@@ -740,7 +740,7 @@ route();
 async function pull(manual){
   if(!API){NET.off=true;render();if(manual)toast('Alamat server belum diisi (config.js)');return}
   try{const r=await apiGet();NET.off=false;NET.sheet=r.sheet||NET.sheet;
-    if(r.ok&&r.state){NET.empty=false;if(!S.rev||r.state.rev!==S.rev){const keep=dirty.length&&ls.get('tt_draft');S=r.state;if(keep&&keep.rev===S.rev){}else{if(dirty.length)lostNotice=dirty.slice();D=clone(S);dirty=[];ls.del('tt_draft')}}ls.set('tt_cache',{at:Date.now(),state:S,sheet:NET.sheet});NET.at=Date.now()}
+    if(r.ok&&r.state){NET.empty=false;if(!S.rev||r.state.rev!==S.rev){if(S.rev&&!manual&&r.state.rev>S.rev&&!dirty.length)setTimeout(()=>toast('Data baru dari pengurus sudah masuk'),50);const keep=dirty.length&&ls.get('tt_draft');S=r.state;if(keep&&keep.rev===S.rev){}else{if(dirty.length)lostNotice=dirty.slice();D=clone(S);dirty=[];ls.del('tt_draft')}}ls.set('tt_cache',{at:Date.now(),state:S,sheet:NET.sheet});NET.at=Date.now()}
     else if(r.ok&&!r.state){NET.empty=true}
     render();if(manual)toast('Data diperbarui')}
   catch(e){NET.off=true;render();if(manual)toast('Tidak ada sinyal. Menampilkan data terakhir.')}
@@ -749,7 +749,7 @@ async function pull(manual){
   E=!!ls.get('tt_pin');
   if(!E&&dirty.length){D=clone(S);dirty=[]}
   render();await pull(false);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!dirty.length&&!saving)pull(false)});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!dirty.length&&!saving)pull(false)});setInterval(()=>{if(document.visibilityState==='visible'&&!dirty.length&&!saving)pull(false)},45000);window.addEventListener('online',()=>{if(!dirty.length&&!saving)pull(false)});
   if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
 })();
 })();
