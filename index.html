@@ -255,6 +255,7 @@ const load1=(src,g)=>new Promise((res,rej)=>{const s=document.createElement('scr
 const loadLib=async(srcs,g)=>{if(window[g])return window[g];let err;for(const u of srcs){try{return await load1(u,g)}catch(e){err=e}}throw err};
 const waFmt=t=>esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(^|\s)_([^_\n]+)_/g,'$1<i>$2</i>');
 const IC={
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
  kas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 15h2"/><path d="M7 6V4h10v2"/></svg>',
  iuran:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l2 2 4-4"/><path d="M8 15h8"/></svg>',
@@ -271,7 +272,7 @@ const IC={
 };
 
 /* ===== Router ===== */
-const VIEWS=['beranda','kas','iuran','arisan','menu','laporan','anggota','denda','notulen','dokumen','pengaturan','riwayat','absensi'];
+const VIEWS=['agenda','beranda','kas','iuran','arisan','menu','laporan','anggota','denda','notulen','dokumen','pengaturan','riwayat','absensi'];
 let view='beranda';
 let ui={abT:null,abD:null,kasM:curYM(),iuM:curYM(),iuMode:'bulan',lapY:today().slice(0,4),lapM:curYM(),doc:0,ar:null,dnF:'belum',angQ:''};
 function route(){const h=(location.hash||'').slice(1);view=VIEWS.includes(h)?h:'beranda';render();window.scrollTo(0,0)}
@@ -305,6 +306,7 @@ V.beranda=()=>{
   h+=ro();
   h+='<div class="grid2"><a class="card stat" href="#kas" style="text-decoration:none;color:inherit"><span class="lab">Masuk '+BLN[+k.slice(5)-1]+'</span><b class="in-c">'+rp(bm.in)+'</b><small>Keluar <span class="out-c">'+rp(bm.out)+'</span></small></a>';
   h+='<div class="card stat"><span class="lab">Pertemuan berikut</span><b>'+fD(nm)+'</b><small>'+esc(D.settings.jadwal||'')+'</small></div></div>';
+  {if(pushReady()&&!pushOnHere())h+=pushCard();const up=agSoon().slice(0,3);h+='<a class="card" href="#agenda" style="text-decoration:none;color:inherit"><div class="row nw"><span class="lab sp">Agenda kegiatan</span><span class="muted">Lihat semua ›</span></div>'+(up.length?up.map(a=>'<div class="row nw"><span class="sp"><b>'+esc(a.judul)+'</b><br><small class="note">'+fD(a.tgl)+(a.jam?' · '+a.jam.replace(':','.'):'')+(a.tempat?' · '+esc(a.tempat):'')+'</small></span>'+(agWhen(a)?'<span class="pill'+(dayDiff(a.tgl)<=1?' no':' ok')+'">'+agWhen(a)+'</span>':'')+'</div>').join(''):'<small class="note">Belum ada agenda. Ketuk untuk pasang pengingat pertemuan rutin.</small>')+'</a>'}
   h+='<a class="card" href="#iuran" style="text-decoration:none;color:inherit"><div class="row nw"><span class="lab sp">Iuran '+fYM(k)+'</span><b>'+paid+'/'+act.length+' lunas</b></div><div class="bar"><i style="width:'+(act.length?Math.round(paid/act.length*100):0)+'%"></i></div><small class="note">Terkumpul '+rp(paid*(D.settings.iuranTim+D.settings.iuranKons))+' · Rp'+((D.settings.iuranTim+D.settings.iuranKons)/1000)+'rb per orang</small></a>';
   h+='<div class="grid2"><a class="card stat" href="#arisan" style="text-decoration:none;color:inherit"><span class="lab">Arisan P'+D.arisan.period+'</span><b>'+cr.length+'/'+ps.length+'</b><small>'+ps.filter(m=>!won.has(m.id)).length+' peserta belum dapat</small></a>';
   h+='<a class="card stat" href="#denda" style="text-decoration:none;color:inherit"><span class="lab">Denda belum lunas</span><b class="'+(dnT?'warn-c':'')+'">'+rp(dnT)+'</b><small>'+dn.length+' catatan</small></a></div>';
@@ -618,9 +620,92 @@ V.dokumen=()=>{
 
 /* --- MENU --- */
 V.menu=()=>{
-  const it=[['absensi','Absensi','Kehadiran & denda otomatis','iuran'],['laporan','Laporan','Rekap bulanan & tahunan','lap'],['anggota','Anggota','Data dan kartu anggota','ang'],['denda','Denda','Catat dan pantau denda','denda'],['notulen','Notulen','Catatan tiap pertemuan','not'],['dokumen','AD/ART','AD, ART, aturan arisan, SK','dok'],['pengaturan','Pengaturan','Nominal, cadangan, ekspor','set'],['riwayat','Riwayat','Siapa mengubah apa','log']];
+  const it=[['agenda','Agenda','Jadwal & pengingat kegiatan','cal'],['absensi','Absensi','Kehadiran & denda otomatis','iuran'],['laporan','Laporan','Rekap bulanan & tahunan','lap'],['anggota','Anggota','Data dan kartu anggota','ang'],['denda','Denda','Catat dan pantau denda','denda'],['notulen','Notulen','Catatan tiap pertemuan','not'],['dokumen','AD/ART','AD, ART, aturan arisan, SK','dok'],['pengaturan','Pengaturan','Nominal, cadangan, ekspor','set'],['riwayat','Riwayat','Siapa mengubah apa','log']];
   return head('Menu')+'<button class="btn w" data-a="install" style="font-family:var(--f-display);font-weight:400;font-size:22px;min-height:56px">'+IC.hp+'Install Aplikasi</button><div class="menu">'+it.map(([v,l,s,i])=>'<a href="#'+v+'">'+IC[i]+'<b>'+l+'</b><small>'+s+'</small></a>').join('')+'</div>';
 };
+
+/* --- NOTIFIKASI (Firebase) --- */
+const FB='https://www.gstatic.com/firebasejs/10.12.2/';
+const pushReady=()=>!!(window.TT_FCM&&window.TT_FCM.projectId&&window.TT_VAPID);
+const pushSupported=()=>'Notification' in window&&'serviceWorker' in navigator&&'PushManager' in window;
+const pushOnHere=()=>!!ls.get('tt_push')&&pushSupported()&&Notification.permission==='granted';
+function pushCard(){
+  if(!pushReady())return '';
+  if(pushOnHere())return '<div class="card"><div class="row nw"><span class="sp"><b>🔔 Notifikasi aktif di HP ini</b><br><small class="note">Pengingat H-1, 1 jam sebelum acara, dan agenda baru akan muncul di HP.</small></span></div>'+(E?'<button class="btn g sm" data-a="pushSend">Kirim pengumuman ke semua HP</button>':'')+'</div>';
+  const ios=isIOS&&!isStandalone();
+  return '<div class="card" style="border:2px solid var(--gold)"><b>🔔 Aktifkan notifikasi</b><small class="note">'+(ios?'Di iPhone: pasang dulu aplikasi ke <b>Layar Utama</b> (menu Bagikan → Tambah ke Layar Utama), buka dari ikonnya, lalu ketuk tombol ini.':'Supaya HP berbunyi saat ada kegiatan (H-1 dan 1 jam sebelum acara) dan saat ada agenda baru.')+'</small><button class="btn" data-a="pushOn">Aktifkan notifikasi</button>'+(E?'<button class="btn g sm" data-a="pushSend">Kirim pengumuman ke semua HP</button>':'')+'</div>';
+}
+async function pushOn(){
+  if(!pushSupported()){toast(isIOS?'Pasang aplikasi ke Layar Utama dulu, lalu buka dari ikonnya':'HP/browser ini belum mendukung notifikasi. Pakai Chrome.');return}
+  if(!API){toast('Alamat server belum diisi');return}
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('Notifikasi belum diizinkan. Buka pengaturan browser → Notifikasi → Izinkan.');return}
+    toast('Menyalakan notifikasi…');
+    const JD='https://cdn.jsdelivr.net/npm/firebase@10.12.2/';
+    await loadLib([FB+'firebase-app-compat.js',JD+'firebase-app-compat.js'],'firebase');
+    if(!firebase.messaging){try{await load1(FB+'firebase-messaging-compat.js','firebase')}catch(x){await load1(JD+'firebase-messaging-compat.js','firebase')}}
+    if(!firebase.apps.length)firebase.initializeApp(window.TT_FCM);
+    const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+    const tok=await firebase.messaging().getToken({vapidKey:window.TT_VAPID,serviceWorkerRegistration:reg});
+    if(!tok)throw new Error('token');
+    const r=await apiPost({action:'sub',token:tok,project:window.TT_FCM.projectId,by:(D.members.find(m=>m.id===ls.get('tt_me'))||{}).name||'',ua:navigator.userAgent.slice(0,120)});
+    if(!r.ok)throw new Error(r.code||'server');
+    ls.set('tt_push',tok);render();toast('Notifikasi aktif ✓');
+  }catch(e){toast('Gagal menyalakan notifikasi ('+(e&&e.message||'error')+'). Periksa sinyal lalu coba lagi.')}
+}
+function pushSend(){
+  sheet('Kirim pengumuman','<p class="note">Pesan langsung muncul di semua HP yang sudah mengaktifkan notifikasi.</p><label class="f">Judul<input type="text" id="ps-t" maxlength="60" value="Team Terabas"></label><label class="f">Isi pesan<textarea id="ps-b" rows="3" maxlength="200" placeholder="Contoh: Besok kumpul jam 16.00 di sekretariat, bawa seragam."></textarea></label><button class="btn w" id="ps-ok">Kirim sekarang</button>',s=>{
+    s.querySelector('#ps-ok').onclick=async()=>{const t=s.querySelector('#ps-t').value.trim(),b=s.querySelector('#ps-b').value.trim();if(!b){toast('Isi pesan dulu');return}
+      toast('Mengirim…');try{const r=await apiPost({action:'push',pin:ls.get('tt_pin'),title:t||'Team Terabas',body:b});
+        if(r.ok){closeSheet();toast('Terkirim ke '+r.sent+' HP'+(r.fail?' ('+r.fail+' gagal)':''))}else toast(r.code==='pin'?'PIN salah':r.code==='notoken'?'Belum ada HP yang mengaktifkan notifikasi':'Gagal: '+(r.err||r.code))}catch(e){toast('Tidak ada sinyal. Coba lagi.')}}})}
+
+/* --- AGENDA --- */
+const agList=()=>(D.agenda||[]).slice().sort((a,b)=>(a.tgl+(a.jam||'')).localeCompare(b.tgl+(b.jam||'')));
+const agSoon=()=>agList().filter(a=>a.tgl>=today());
+const dayDiff=d=>Math.round((new Date(d+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5);
+const agWhen=a=>{const n=dayDiff(a.tgl);return n===0?'Hari ini':n===1?'Besok':n>1&&n<=7?n+' hari lagi':''};
+const dtc=(d,j)=>d.replace(/-/g,'')+'T'+(j||'08:00').replace(':','')+'00';
+const addMin=(j,mn)=>{const[h,m]=(j||'08:00').split(':').map(Number);const t=h*60+m+mn;return pad(Math.floor(t/60)%24)+':'+pad(t%60)};
+function agCal(a){
+  const s=dtc(a.tgl,a.jam),e=dtc(a.tgl,a.selesai||addMin(a.jam,120));
+  const det=(a.ket?a.ket+'\n\n':'')+'Team Terabas Kelubagolit · Loyalitas Tanpa Batas';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(a.judul)+'&dates='+s+'/'+e+'&details='+encodeURIComponent(det)+'&location='+encodeURIComponent(a.tempat||'')+(a.rrule?'&recur='+encodeURIComponent('RRULE:'+a.rrule):'');
+}
+function agIcs(a){
+  const s=dtc(a.tgl,a.jam),e=dtc(a.tgl,a.selesai||addMin(a.jam,120)),x=t=>String(t||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/([,;])/g,'\\$1');
+  const st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const al=(tr,d)=>'BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:'+x(d)+'\r\nTRIGGER:'+tr+'\r\nEND:VALARM\r\n';
+  return 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Team Terabas//Agenda//ID\r\nCALSCALE:GREGORIAN\r\nBEGIN:VEVENT\r\nUID:'+a.id+'@team-terabas\r\nDTSTAMP:'+st+'\r\nDTSTART:'+s+'\r\nDTEND:'+e+'\r\n'+(a.rrule?'RRULE:'+a.rrule+'\r\n':'')+'SUMMARY:'+x(a.judul)+'\r\nLOCATION:'+x(a.tempat)+'\r\nDESCRIPTION:'+x((a.ket?a.ket+'\n\n':'')+'Team Terabas Kelubagolit')+'\r\n'+al('-P1D','Besok: '+a.judul)+al('-PT1H','1 jam lagi: '+a.judul)+'END:VEVENT\r\nEND:VCALENDAR\r\n';
+}
+const agRutin=()=>{const j=((D.settings.jadwal||'').match(/(\d{1,2})[.:](\d{2})/)||[0,'17','30']);return {id:'rutin',tgl:nextMeet(),jam:pad(+j[1])+':'+j[2],judul:'Pertemuan rutin Team Terabas',tempat:D.settings.tempat||'',ket:'Pertemuan & arisan bulanan, '+(D.settings.jadwal||'Sabtu minggu ke-3 setiap bulan'),rrule:'FREQ=MONTHLY;BYDAY=3SA'}};
+const agWA=a=>'*'+a.judul+'*\n📅 '+['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date(a.tgl+'T00:00:00').getDay()]+', '+fD(a.tgl)+(a.jam?'\n⏰ Pukul '+a.jam.replace(':','.')+(a.selesai?'–'+a.selesai.replace(':','.'):'')+' WITA':'')+(a.tempat?'\n📍 '+a.tempat:'')+(a.ket?'\n\n'+a.ket:'')+'\n\nTeam Terabas · Loyalitas Tanpa Batas';
+function agItem(a){const w=agWhen(a);return '<button class="it" data-a="agOpen" data-v="'+a.id+'"><div class="m"><b>'+esc(a.judul)+'</b><small>'+fD(a.tgl)+(a.jam?' · '+a.jam.replace(':','.'):'')+(a.tempat?' · '+esc(a.tempat):'')+'</small></div>'+(w?'<span class="pill'+(dayDiff(a.tgl)<=1?' no':' ok')+'">'+w+'</span>':'<span class="muted">›</span>')+'</button>'}
+V.agenda=()=>{
+  const up=agSoon(),past=agList().filter(a=>a.tgl<today()).reverse(),r=agRutin();
+  let h=head('Agenda Kegiatan','Jadwal kegiatan tim. Aktifkan notifikasi atau ketuk <b>Ingatkan saya</b> supaya HP Anda berbunyi sebelum acara.');
+  h+=ro()+pushCard();
+  h+='<div class="card" style="border:2px solid var(--gold)"><span class="lab">Pertemuan rutin</span><b>'+esc(D.settings.jadwal||'Sabtu minggu ke-3 setiap bulan, pukul 17.30')+'</b><small class="note">Berikutnya: '+fD(r.tgl)+'. Pasang sekali, pengingat otomatis setiap bulan.</small><button class="btn" data-a="agRemind" data-v="rutin">🔔 Ingatkan saya setiap bulan</button></div>';
+  if(E)h+='<button class="btn w" data-a="agAdd">+ Tambah agenda</button>';
+  h+='<div class="lab">Akan datang</div>'+(up.length?'<div class="list">'+up.map(agItem).join('')+'</div>':'<div class="empty">Belum ada agenda.'+(E?' Ketuk <b>+ Tambah agenda</b>.':'')+'</div>');
+  if(past.length)h+='<details><summary class="lab" style="cursor:pointer">Sudah lewat ('+past.length+')</summary><div class="list">'+past.map(agItem).join('')+'</div></details>';
+  return h;
+};
+function agFind(id){return id==='rutin'?agRutin():(D.agenda||[]).find(x=>x.id===id)}
+function agOpen(id){const a=agFind(id);if(!a)return;
+  sheet(a.judul,'<div class="kv"><span>Tanggal</span><b>'+fD(a.tgl)+(agWhen(a)?' ('+agWhen(a)+')':'')+'</b><span>Jam</span><b>'+(a.jam?a.jam.replace(':','.')+(a.selesai?'–'+a.selesai.replace(':','.'):''):'-')+'</b><span>Tempat</span><b>'+esc(a.tempat||'-')+'</b></div>'+(a.ket?'<div class="ntext">'+waFmt(a.ket)+'</div>':'')+
+  '<button class="btn w" data-a="agRemind" data-v="'+a.id+'">🔔 Ingatkan saya</button><button class="btn g w" id="ag-wa">Salin untuk grup WA</button>'+(E?'<div class="row"><button class="btn g sm" id="ag-ed">Ubah</button><button class="btn d sm" id="ag-del">Hapus</button></div>':''),
+  s=>{s.querySelector('#ag-wa').onclick=()=>copy(agWA(a),'Pengumuman disalin. Tempel di grup WA.');const ed=s.querySelector('#ag-ed');ed&&(ed.onclick=()=>agForm(a));const dl=s.querySelector('#ag-del');dl&&(dl.onclick=()=>confirmSheet('Hapus agenda?','Agenda <b>'+esc(a.judul)+'</b> akan dihapus.','Ya, hapus',()=>change('Hapus agenda: '+a.judul,d=>{d.agenda=(d.agenda||[]).filter(x=>x.id!==a.id)})))})}
+function agRemind(id){const a=agFind(id);if(!a)return;
+  sheet('Ingatkan saya','<p class="note">Acara <b>'+esc(a.judul)+'</b> masuk ke kalender HP Anda'+(a.rrule?' dan berulang setiap bulan':'')+'. HP akan berbunyi sebelum acara, walaupun aplikasi ini tidak dibuka.</p>'+
+  '<div class="card"><b>HP Android</b><small class="note">Buka Google Kalender, lalu ketuk <b>Simpan</b>. Supaya diingatkan sehari sebelumnya, ketuk <b>Tambah notifikasi</b> lalu pilih <b>1 hari sebelumnya</b>.</small><a class="btn" href="'+esc(agCal(a))+'" target="_blank" rel="noopener">Buka Google Kalender</a></div>'+
+  '<div class="card"><b>iPhone / kalender lain</b><small class="note">Unduh file kalender, buka, lalu ketuk <b>Tambah</b>. Pengingat H-1 dan 1 jam sebelum acara sudah terpasang.</small><button class="btn g" id="ag-ics">Unduh file kalender (.ics)</button></div>',
+  s=>{s.querySelector('#ag-ics').onclick=()=>saveFile('agenda-'+(a.id==='rutin'?'pertemuan-rutin':a.tgl)+'.ics',new Blob([agIcs(a)],{type:'text/calendar'}))})}
+function agForm(a){const isNew=!a;a=a?clone(a):{id:uid(),tgl:today(),jam:'08:00',selesai:'',judul:'',tempat:'',ket:''};
+  sheet(isNew?'Agenda baru':'Ubah agenda','<label class="f">Nama kegiatan<input type="text" id="ag-j" maxlength="100" value="'+esc(a.judul)+'" placeholder="Contoh: Kerja bakti di gereja"></label><label class="f">Tanggal<input type="date" id="ag-t" value="'+a.tgl+'"></label><div class="grid2"><label class="f">Jam mulai<input type="time" id="ag-m" value="'+(a.jam||'')+'"></label><label class="f">Jam selesai (boleh kosong)<input type="time" id="ag-s" value="'+(a.selesai||'')+'"></label></div><label class="f">Tempat<input type="text" id="ag-p" maxlength="100" value="'+esc(a.tempat||'')+'"></label><label class="f">Keterangan (yang perlu dibawa, seragam, dll.)<textarea id="ag-k" rows="4">'+esc(a.ket||'')+'</textarea></label><button class="btn w" id="ag-ok">Simpan agenda</button>',
+  s=>{s.querySelector('#ag-ok').onclick=()=>{const g=i=>s.querySelector(i).value.trim();const n={id:a.id,judul:g('#ag-j'),tgl:g('#ag-t'),jam:g('#ag-m'),selesai:g('#ag-s'),tempat:g('#ag-p'),ket:g('#ag-k')};
+    if(!n.judul||!n.tgl){toast('Isi nama kegiatan dan tanggal');return}
+    change((isNew?'Tambah agenda: ':'Ubah agenda: ')+n.judul+' ('+fD(n.tgl)+')',d=>{d.agenda=d.agenda||[];if(isNew)d.agenda.push(n);else d.agenda=d.agenda.map(x=>x.id===n.id?n:x)});closeSheet();toast('Agenda dicatat. Tekan Simpan.')}})}
 
 /* --- RIWAYAT --- */
 V.riwayat=()=>{
@@ -670,7 +755,8 @@ function tables(st){
   const ar=[['Periode','Putaran','Tanggal','Penerima','Uang arisan','Cara','Jumlah menyetor']].concat(D.arisan.rounds.map(r=>[r.period,r.no,r.tgl,r.winnerName,r.pot,r.cara==='sepakat'?'Kesepakatan':'Undian',r.setor?r.setor.length:'data lama']));
   const dn=[['Tanggal','Nama','Pelanggaran','Jumlah','Status','Tanggal lunas']].concat(D.denda.map(d=>[d.tgl,mem(d.memberId).name,d.jenisL,d.jumlah,d.lunas?'Lunas':'Belum',d.tglLunas||'']));
   const ang=[['Nama','Jabatan','No. WA','Ikut arisan','Status']].concat(D.members.map(m=>[m.name,m.jabatan||'Anggota',m.wa||'',m.arisan?'Ya':'Tidak',m.aktif===false?'Nonaktif':'Aktif']));
-  return {'Buku Kas':kas,'Rekap Bulanan':rek,'Iuran':iu,'Arisan':ar,'Denda':dn,'Anggota':ang};
+  const agd=[['Tanggal','Jam','Selesai','Kegiatan','Tempat','Keterangan']].concat((st.agenda||[]).slice().sort((a,b)=>a.tgl.localeCompare(b.tgl)).map(a=>[a.tgl,a.jam||'',a.selesai||'',a.judul,a.tempat||'',a.ket||'']));
+  return {'Agenda':agd,'Buku Kas':kas,'Rekap Bulanan':rek,'Iuran':iu,'Arisan':ar,'Denda':dn,'Anggota':ang};
 }
 async function saveFile(name,data){try{const b=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('File diunduh: '+name)}catch(e){toast('Gagal mengunduh file')}}
 async function exportXlsx(){try{toast('Menyiapkan Excel…');const X=await loadLib(LIB_XLSX,'XLSX');const wb=X.utils.book_new();const T=tables();Object.keys(T).forEach(n=>{const ws=X.utils.aoa_to_sheet(T[n]);ws['!cols']=T[n][0].map((_,i)=>({wch:i===4&&n==='Buku Kas'?42:16}));X.utils.book_append_sheet(wb,ws,n)});const buf=X.write(wb,{type:'array',bookType:'xlsx'});await saveFile('Team-Terabas-'+today()+'.xlsx',new Blob([buf]))}catch(e){toast('Gagal membuat Excel. Periksa internet.')}}
@@ -725,7 +811,7 @@ document.addEventListener('click',e=>{
     abSave,abGo:()=>{ui.abT=v;render()},
     tgWA:()=>{const st=D.settings,tg=active().map(m=>[m,tunggakan(m.id)]).filter(x=>x[1].length);copy('*TUNGGAKAN IURAN TEAM TERABAS*\n(dihitung sejak '+fYM(iuStart())+')\n\n'+(tg.map(([m,ks])=>'• '+m.name+': '+ks.length+' bln ('+ks.map(k=>BLN[+k.slice(5)-1].slice(0,3)).join(', ')+')').join('\n')||'Tidak ada tunggakan 🎉')+'\n\nIuran Rp'+((st.iuranTim+st.iuranKons)/1000)+'rb/bulan. Mohon dilunasi pada pertemuan berikut. Terima kasih 🤝','Tunggakan disalin')},
     dnTarif:()=>change('Tambah jenis denda',d=>d.settings.denda.push({k:uid(),l:'Jenis denda baru',n:0})),
-    ntAdd:()=>ntForm(null),ntOpen:()=>ntOpen(v),
+    pushOn,pushSend,agAdd:()=>agForm(null),agOpen:()=>agOpen(v),agRemind:()=>agRemind(v),ntAdd:()=>ntForm(null),ntOpen:()=>ntOpen(v),
     doc:()=>{ui.doc=+v;render()},
     setSave,install:installGuide,copyLink:()=>copy(D.settings.link,'Link disalin'),
     login,seed:()=>{change('Kirim data awal ke Google Sheet',()=>{});publish()},refresh:()=>pull(true),
